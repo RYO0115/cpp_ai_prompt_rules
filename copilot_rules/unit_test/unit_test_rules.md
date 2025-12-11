@@ -29,7 +29,9 @@
 
 ## 出力先
 
-- 出力先は他の単体テストに倣って, include, srcなどと同じ場所にあるtestディレクトリに作成してください
+- include, srcなどと同じ場所にtestディレクトリが無ければ作成してください
+- testディレクトリに元のファイル名と同じディレクトリが無ければディレクトリを作ってください。
+- 作成したテストコードは test/元ファイル名/ に保存してください
 
 ## CMakeLists.txt
 
@@ -81,6 +83,7 @@ endif()
 
 ### 基本方針
 - **本番コード（ヘッダーファイル・実装ファイル）は一切変更しない**
+- **スタンダードライブラリの挙動を変えずに実装する**
 - **循環依存やコンパイル時間の増大を避ける**
 - **テスト専用のアクセス機能を分離したファイルで実装する**
 
@@ -116,8 +119,19 @@ namespace PrivateAccess {
 ### private_access.cpp の作成ルール
 
 ```cpp
+// 標準ライブラリやテスト対象外のライブラリを先に読み込む
+#include <iostream>
+#include <string>
+#include <vector>
+#include <fstream>
+#include <sstream>
+// その他必要な標準ライブラリ...
 
-// この実装ファイルでのみprivateアクセスを有効化
+// プロジェクト固有の依存ライブラリ
+#include "formula_tools.hpp"
+// その他必要なプロジェクトライブラリ...
+
+// この時点でprivateアクセスを有効化
 #define private public
 #include "[original_header_file].hpp"
 #undef private
@@ -204,6 +218,11 @@ endif()
 4. **複雑なprivateメソッドのテスト**
    - 引数が多い場合は、構造体やヘルパー関数で整理する
    - privateメソッドが他のprivateメソッドを呼ぶ場合は、依存関係を考慮してテスト順序を決める
+
+5. **ライブラリのinclude順序**
+   - **標準ライブラリやテスト対象外のライブラリを必ず`#define private public`より前にincludeする**
+   - これにより、標準ライブラリ内のprivateキーワードが置換されることを防ぐ
+   - includeの順序：①標準ライブラリ → ②プロジェクト依存ライブラリ → ③privateアクセス定義 → ④対象ヘッダー → ⑤アクセスヘッダー
 
 ### 禁止事項
 
